@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { SlideData, SlideViewMode } from './types';
 import { 
   ChevronLeft, 
@@ -7,12 +7,7 @@ import {
   LayoutGrid, 
   Presentation, 
   Maximize, 
-  Download,
-  Phone,
-  Mail,
-  MapPin,
-  Globe,
-  Instagram
+  Download
 } from 'lucide-react';
 import Slide from './components/Slide';
 
@@ -126,14 +121,42 @@ const SLIDES: SlideData[] = [
 const App: React.FC = () => {
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [viewMode, setViewMode] = useState<SlideViewMode>(SlideViewMode.PRESENTATION);
+  
+  // Transition states
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [transitionDirection, setTransitionDirection] = useState<'next' | 'prev' | null>(null);
+  const [outgoingIndex, setOutgoingIndex] = useState<number | null>(null);
+  
+  const timerRef = useRef<number | null>(null);
+
+  const goToSlide = useCallback((newIndex: number) => {
+    if (isTransitioning || newIndex === currentSlideIndex) return;
+    
+    const direction = newIndex > currentSlideIndex ? 'next' : 'prev';
+    setTransitionDirection(direction);
+    setOutgoingIndex(currentSlideIndex);
+    setCurrentSlideIndex(newIndex);
+    setIsTransitioning(true);
+
+    if (timerRef.current) window.clearTimeout(timerRef.current);
+    timerRef.current = window.setTimeout(() => {
+      setIsTransitioning(false);
+      setOutgoingIndex(null);
+      setTransitionDirection(null);
+    }, 800); // Must match CSS animation duration
+  }, [currentSlideIndex, isTransitioning]);
 
   const nextSlide = useCallback(() => {
-    setCurrentSlideIndex((prev) => Math.min(prev + 1, SLIDES.length - 1));
-  }, []);
+    if (currentSlideIndex < SLIDES.length - 1) {
+      goToSlide(currentSlideIndex + 1);
+    }
+  }, [currentSlideIndex, goToSlide]);
 
   const prevSlide = useCallback(() => {
-    setCurrentSlideIndex((prev) => Math.max(prev - 1, 0));
-  }, []);
+    if (currentSlideIndex > 0) {
+      goToSlide(currentSlideIndex - 1);
+    }
+  }, [currentSlideIndex, goToSlide]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -152,8 +175,13 @@ const App: React.FC = () => {
       {/* Top Navbar */}
       <header className="z-50 px-6 py-4 flex justify-between items-center border-b border-orange-500/20 bg-black/80 backdrop-blur-sm">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center p-2">
-             <img src="https://picsum.photos/id/1025/100/100" alt="Lion Logo" className="rounded-full contrast-125 invert" />
+          <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center p-1 overflow-hidden shadow-inner">
+             <img 
+               src="https://drive.google.com/thumbnail?id=1j1Q69GniOuufFdeKGDtlTuvr7lmL7jPA&sz=w200" 
+               alt="Force Per4mance Logo" 
+               className="w-full h-full object-contain"
+               referrerPolicy="no-referrer"
+             />
           </div>
           <div>
             <h1 className="text-sm font-bold tracking-widest text-white">FORCE PER4MANCE</h1>
@@ -179,25 +207,45 @@ const App: React.FC = () => {
       </header>
 
       {/* Main Slide Area */}
-      <main className="flex-1 flex flex-col items-center justify-center p-4 md:p-10">
+      <main className="flex-1 flex flex-col items-center justify-center p-4 md:p-10 perspective-container">
         {viewMode === SlideViewMode.PRESENTATION ? (
-          <div className="w-full h-full max-w-6xl flex items-center justify-center gap-6">
+          <div className="w-full h-full max-w-6xl flex items-center justify-center gap-6 relative">
             <button 
               onClick={prevSlide}
-              disabled={currentSlideIndex === 0}
-              className={`p-4 rounded-full bg-white/5 hover:bg-white/10 text-white transition-all ${currentSlideIndex === 0 ? 'opacity-20 cursor-not-allowed' : 'opacity-100 hover:scale-110'}`}
+              disabled={currentSlideIndex === 0 || isTransitioning}
+              className={`p-4 rounded-full bg-white/5 hover:bg-white/10 text-white transition-all z-50 ${currentSlideIndex === 0 ? 'opacity-20 cursor-not-allowed' : 'opacity-100 hover:scale-110'}`}
             >
               <ChevronLeft size={32} />
             </button>
 
-            <div className="flex-1 h-full aspect-video shadow-2xl shadow-orange-500/10 border border-orange-500/10 rounded-xl overflow-hidden relative bg-[#050505]">
-               <Slide data={SLIDES[currentSlideIndex]} />
+            <div className="flex-1 h-full aspect-video relative">
+               {/* Outgoing Slide Container */}
+               {outgoingIndex !== null && (
+                 <div 
+                   className={`absolute inset-0 z-10 shadow-2xl rounded-xl overflow-hidden border border-orange-500/10 ${
+                     transitionDirection === 'next' ? 'animate-cube-out-left' : 'animate-cube-out-right'
+                   }`}
+                 >
+                   <Slide data={SLIDES[outgoingIndex]} />
+                 </div>
+               )}
+
+               {/* Incoming/Current Slide Container */}
+               <div 
+                 className={`absolute inset-0 shadow-2xl rounded-xl overflow-hidden border border-orange-500/10 bg-[#050505] transition-transform duration-300 ${
+                   isTransitioning 
+                    ? (transitionDirection === 'next' ? 'animate-cube-in-right z-20' : 'animate-cube-in-left z-20') 
+                    : 'z-0'
+                 }`}
+               >
+                 <Slide key={currentSlideIndex} data={SLIDES[currentSlideIndex]} />
+               </div>
             </div>
 
             <button 
               onClick={nextSlide}
-              disabled={currentSlideIndex === SLIDES.length - 1}
-              className={`p-4 rounded-full bg-white/5 hover:bg-white/10 text-white transition-all ${currentSlideIndex === SLIDES.length - 1 ? 'opacity-20 cursor-not-allowed' : 'opacity-100 hover:scale-110'}`}
+              disabled={currentSlideIndex === SLIDES.length - 1 || isTransitioning}
+              className={`p-4 rounded-full bg-white/5 hover:bg-white/10 text-white transition-all z-50 ${currentSlideIndex === SLIDES.length - 1 ? 'opacity-20 cursor-not-allowed' : 'opacity-100 hover:scale-110'}`}
             >
               <ChevronRight size={32} />
             </button>

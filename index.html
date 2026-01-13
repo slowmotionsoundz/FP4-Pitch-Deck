@@ -15,22 +15,79 @@
             margin: 0;
             overflow: hidden;
         }
-        .slide-transition-enter {
+
+        /* 3D Cube Transition Keyframes */
+        @keyframes cubeOutLeft {
+            0% { transform: translateX(0) rotateY(0deg); opacity: 1; filter: brightness(1); }
+            100% { transform: translateX(-100%) rotateY(-90deg); opacity: 0; filter: brightness(0.5); }
+        }
+
+        @keyframes cubeInRight {
+            0% { transform: translateX(100%) rotateY(90deg); opacity: 0; filter: brightness(0.5); }
+            100% { transform: translateX(0) rotateY(0deg); opacity: 1; filter: brightness(1); }
+        }
+
+        @keyframes cubeOutRight {
+            0% { transform: translateX(0) rotateY(0deg); opacity: 1; filter: brightness(1); }
+            100% { transform: translateX(100%) rotateY(90deg); opacity: 0; filter: brightness(0.5); }
+        }
+
+        @keyframes cubeInLeft {
+            0% { transform: translateX(-100%) rotateY(-90deg); opacity: 0; filter: brightness(0.5); }
+            100% { transform: translateX(0) rotateY(0deg); opacity: 1; filter: brightness(1); }
+        }
+
+        /* Perspective Container */
+        .perspective-container {
+            perspective: 2500px;
+            perspective-origin: 50% 50%;
+            overflow: visible;
+        }
+
+        .animate-cube-out-left { animation: cubeOutLeft 0.8s cubic-bezier(0.7, 0, 0.3, 1) forwards; }
+        .animate-cube-in-right { animation: cubeInRight 0.8s cubic-bezier(0.7, 0, 0.3, 1) forwards; }
+        .animate-cube-out-right { animation: cubeOutRight 0.8s cubic-bezier(0.7, 0, 0.3, 1) forwards; }
+        .animate-cube-in-left { animation: cubeInLeft 0.8s cubic-bezier(0.7, 0, 0.3, 1) forwards; }
+
+        /* Text Animations */
+        @keyframes fadeSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+                filter: blur(5px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+                filter: blur(0);
+            }
+        }
+
+        .animate-fade-slide-in {
+            animation: fadeSlideIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
             opacity: 0;
-            transform: scale(0.95);
         }
-        .slide-transition-enter-active {
-            opacity: 1;
-            transform: scale(1);
-            transition: opacity 500ms, transform 500ms;
+
+        .stagger-1 { animation-delay: 0.1s; }
+        .stagger-2 { animation-delay: 0.2s; }
+        .stagger-3 { animation-delay: 0.3s; }
+        .stagger-4 { animation-delay: 0.4s; }
+        .stagger-5 { animation-delay: 0.5s; }
+
+        /* Grain texture */
+        .bg-grain {
+            position: relative;
         }
-        .slide-transition-exit {
-            opacity: 1;
+        .bg-grain::after {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: url("https://grainy-gradients.vercel.app/noise.svg");
+            opacity: 0.05;
+            pointer-events: none;
+            z-index: 50;
         }
-        .slide-transition-exit-active {
-            opacity: 0;
-            transition: opacity 500ms;
-        }
+
         ::-webkit-scrollbar {
             width: 8px;
         }
@@ -53,7 +110,7 @@
 }
 </script>
 </head>
-<body>
+<body class="bg-grain">
     <div id="root"></div>
 </body>
 </html>
